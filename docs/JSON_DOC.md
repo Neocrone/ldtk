@@ -198,8 +198,11 @@ Value | Type | Description
 `pivotX`<br/><sup class="only">Only *'Stamp' tile mode*</sup><br/><sup class="internal">*Internal editor data*</sup> | Float | X pivot of a tile stamp (0-1)
 `pivotY`<br/><sup class="only">Only *'Stamp' tile mode*</sup><br/><sup class="internal">*Internal editor data*</sup> | Float | Y pivot of a tile stamp (0-1)
 `size`<br/><sup class="internal">*Internal editor data*</sup> | Int | Pattern width & height. Should only be 1,3,5 or 7.
+`templateIntGridValue`<br/><sup class="internal">*Internal editor data*</sup> | Int | 
+`templateTileIds`<br/><sup class="internal">*Internal editor data*</sup> | Array&nbsp;of&nbsp;Int | 
+`templateUUID`<br/><sup class="internal">*Internal editor data*</sup> | Int | 
 `tileIds`<br/><sup class="internal">*Internal editor data*</sup> | Array&nbsp;of&nbsp;Int | Array of all the tile IDs. They are used randomly or as stamps, based on `tileMode` value.
-`tileMode`<br/><sup class="internal">*Internal editor data*</sup> | Enum | Defines how tileIds array is used<br/> Possible values: `Single`, `Stamp`
+`tileMode`<br/><sup class="internal">*Internal editor data*</sup> | Enum | Defines how tileIds array is used<br/> Possible values: `Single`, `Stamp`, `Template`
 `uid`<br/><sup class="internal">*Internal editor data*</sup> | Int | Unique Int identifier
 `xModulo`<br/><sup class="internal">*Internal editor data*</sup> | Int | X cell coord modulo
 `yModulo`<br/><sup class="internal">*Internal editor data*</sup> | Int | Y cell coord modulo

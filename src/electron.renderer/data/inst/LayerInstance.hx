@@ -635,10 +635,18 @@ class LayerInstance {
 		return isValid(cx,cy) && gridTiles.exists( coordId(cx,cy) ) && gridTiles.get(coordId(cx,cy)).length>0;
 	}
 
-	inline function addRuleTilesAt(r:data.def.AutoLayerRuleDef, cx:Int, cy:Int, flips:Int) {
-		var tileIds = r.tileMode==Single ? [ r.getRandomTileForCoord(seed+r.uid, cx,cy) ] : r.tileIds;
+	inline function addRuleTilesAt(r:data.def.AutoLayerRuleDef, tileIdsOverride:Array<Int>, cx:Int, cy:Int, flips:Int) {
+		var tileIds = switch(r.tileMode) {
+			case Single: [ r.getRandomTileForCoord(seed+r.uid, cx,cy) ];
+			case Stamp: r.tileIds;
+			case Template: tileIdsOverride;
+		};
 		var td = _project.defs.getTilesetDef( def.autoTilesetDefUid );
-		var stampInfos = r.tileMode==Single ? null : getRuleStampRenderInfos(r, td, tileIds, flips);
+		var stampInfos = switch(r.tileMode) {
+			case Single: null;
+			case Stamp: getRuleStampRenderInfos(r, td, tileIds, flips);
+			case Template: null;
+		};
 		autoTilesCache.get(r.uid).set( coordId(cx,cy), tileIds.map( (tid)->{
 			return {
 				x: cx*def.gridSize + (stampInfos==null ? 0 : stampInfos.get(tid).xOff ),
@@ -675,20 +683,21 @@ class LayerInstance {
 
 
 			// Apply rule
-			if( r.matches(this, source, cx,cy) ) {
-				addRuleTilesAt(r, cx,cy, 0);
+			var tileIds:Array<Int>;
+			if( (tileIds = r.matches(this, source, cx,cy)).length > 0 ) {
+				addRuleTilesAt(r, tileIds, cx,cy, 0);
 				return true;
 			}
-			else if( r.flipX && r.matches(this, source, cx,cy, -1) ) {
-				addRuleTilesAt(r, cx,cy, 1);
+			else if( r.flipX &&  (tileIds = r.matches(this, source, cx,cy, -1)).length > 0 ) {
+				addRuleTilesAt(r, tileIds, cx,cy, 1);
 				return true;
 			}
-			else if( r.flipY && r.matches(this, source, cx,cy, 1, -1) ) {
-				addRuleTilesAt(r, cx,cy, 2);
+			else if( r.flipY &&  (tileIds = r.matches(this, source, cx,cy, 1, -1)).length > 0 ) {
+				addRuleTilesAt(r, tileIds, cx,cy, 2);
 				return true;
 			}
-			else if( r.flipX && r.flipY && r.matches(this, source, cx,cy, -1, -1) ) {
-				addRuleTilesAt(r, cx,cy, 3);
+			else if( r.flipX && r.flipY &&  (tileIds = r.matches(this, source, cx,cy, -1, -1)).length > 0 ) {
+				addRuleTilesAt(r, tileIds, cx,cy, 3);
 				return true;
 			}
 			else

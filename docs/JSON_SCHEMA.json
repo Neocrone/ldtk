@@ -412,6 +412,9 @@
 				"pivotX",
 				"pivotY",
 				"size",
+				"templateIntGridValue",
+				"templateTileIds",
+				"templateUUID",
 				"tileIds",
 				"tileMode",
 				"uid",
@@ -442,6 +445,12 @@
 					"description": "",
 					"type": [
 						"number"
+					]
+				},
+				"templateIntGridValue": {
+					"description": "",
+					"type": [
+						"integer"
 					]
 				},
 				"pattern": {
@@ -517,16 +526,23 @@
 					]
 				},
 				"tileMode": {
-					"description": "Defines how tileIds array is used Possible values: `Single`, `Stamp`",
+					"description": "Defines how tileIds array is used Possible values: `Single`, `Stamp`, `Template`",
 					"enum": [
 						"Single",
-						"Stamp"
+						"Stamp",
+						"Template"
 					]
 				},
 				"flipY": {
 					"description": "If TRUE, allow rule to be matched by flipping its pattern vertically",
 					"type": [
 						"boolean"
+					]
+				},
+				"templateUUID": {
+					"description": "",
+					"type": [
+						"integer"
 					]
 				},
 				"pivotY": {
@@ -539,6 +555,17 @@
 					"description": "Y cell coord modulo",
 					"type": [
 						"integer"
+					]
+				},
+				"templateTileIds": {
+					"description": "",
+					"items": {
+						"type": [
+							"integer"
+						]
+					},
+					"type": [
+						"array"
 					]
 				},
 				"active": {

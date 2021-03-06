@@ -1,5 +1,6 @@
 package ui.modal.panel;
 
+import ldtk.Layer_AutoLayer.AutoTile;
 import data.DataTypes;
 
 class EditAllAutoLayerRules extends ui.modal.Panel {
@@ -447,134 +448,168 @@ class EditAllAutoLayerRules extends ui.modal.Panel {
 				else if( r.chance<=0 )
 					i.jInput.addClass("off");
 
-				// X modulo
-				var i = Input.linkToHtmlInput( r.xModulo, jRule.find("[name=xModulo]"));
-				i.onValueChange = (v)->{
-					if( v>1 )
-						invalidateRuleAndOnesBelow(r);
-					r.tidy();
-				}
-				i.linkEvent( LayerRuleChanged(r) );
-				i.setBounds(1,10);
-				if( r.xModulo==1 )
-					i.jInput.addClass("default");
+				var jOptions = jRule.find(".options");
+				var jTemplateOptions = jRule.find(".templateOptions");
+				if (r.tileMode == Template) {
+					jOptions.hide();
+					jTemplateOptions.show();
 
-				// Y modulo
-				var i = Input.linkToHtmlInput( r.yModulo, jRule.find("[name=yModulo]"));
-				i.onValueChange = (v)->{
-					if( v>1 )
-						invalidateRuleAndOnesBelow(r);
-					r.tidy();
-				}
-				i.linkEvent( LayerRuleChanged(r) );
-				i.setBounds(1,10);
-				if( r.yModulo==1 )
-					i.jInput.addClass("default");
-
-				// Break on match
-				var jFlag = jRule.find("a.break");
-				jFlag.addClass( r.breakOnMatch ? "on" : "off" );
-				jFlag.click( function(ev:js.jquery.Event) {
-					ev.preventDefault();
-					invalidateRuleAndOnesBelow(r);
-					r.breakOnMatch = !r.breakOnMatch;
-					editor.ge.emit( LayerRuleChanged(r) );
-				});
-
-				// Flip-X
-				var jFlag = jRule.find("a.flipX");
-				jFlag.addClass( r.flipX ? "on" : "off" );
-				jFlag.click( function(ev:js.jquery.Event) {
-					ev.preventDefault();
-					if( r.isSymetricX() )
-						N.error("This option will have no effect on a symetric rule.");
-					else {
-						r.flipX = !r.flipX;
-						editor.ge.emit( LayerRuleChanged(r) );
+					var jTemplatePreview = jTemplateOptions.find(".templatePreview");
+					// Template Preview
+					if (r.templateTileIds != null && r.templateTileIds.length > 0 && r.templateTileIds[0] != -1) {
+						var tileId = r.templateTileIds[0];
+						var td = Editor.ME.project.defs.getTilesetDef(sourceDef.autoTilesetDefUid);
+						var jTile = JsTools.createTile(td, tileId, 32);
+						jTemplatePreview.empty().append(jTile);
+					} else {
+						var jTile = new J("<canvas style=\"width: 32px; height: 32px;\">");
+						jTile.addClass("tile");
+						jTile.addClass("active");
+						jTile.addClass("empty");
+						jTemplatePreview.empty().append(jTile);
 					}
-				});
 
-				// Flip-Y
-				var jFlag = jRule.find("a.flipY");
-				jFlag.addClass( r.flipY ? "on" : "off" );
-				jFlag.click( function(ev:js.jquery.Event) {
-					ev.preventDefault();
-					if( r.isSymetricY() )
-						N.error("This option will have no effect on a symetric rule.");
-					else {
-						r.flipY = !r.flipY;
-						editor.ge.emit( LayerRuleChanged(r) );
+					var groupName = "-- None --";
+					var ruleGroup = sourceDef.getRuleGroupByUid(r.templateUUID);
+					if (ruleGroup != null) {
+						groupName = ruleGroup.name;
 					}
-				});
 
-				// Perlin
-				var jFlag = jRule.find("a.perlin");
-				jFlag.addClass( r.hasPerlin() ? "on" : "off" );
-				jFlag.mousedown( function(ev:js.jquery.Event) {
-					ev.preventDefault();
-					if( ev.button==2 ) {
-						// Open perlin settings
-						var w = new ui.modal.dialog.RulePerlinSettings(jFlag, r);
-						w.onSettingsChange = (r)->invalidateRuleAndOnesBelow(r);
-						if( !r.hasPerlin() ) {
-							r.setPerlin(true);
+					var jSelectedTemplate = jTemplateOptions.find(".templateName");
+					jSelectedTemplate.empty().append("<div>" + groupName + "</div><p class=\"fadeOut\"></p>");
+				} else {
+					jOptions.show();
+					jTemplateOptions.hide();
+
+					// X modulo
+					var i = Input.linkToHtmlInput( r.xModulo, jRule.find("[name=xModulo]"));
+					i.onValueChange = (v)->{
+						if( v>1 )
+							invalidateRuleAndOnesBelow(r);
+						r.tidy();
+					}
+					i.linkEvent( LayerRuleChanged(r) );
+					i.setBounds(1,10);
+					if( r.xModulo==1 )
+						i.jInput.addClass("default");
+
+					// Y modulo
+					var i = Input.linkToHtmlInput( r.yModulo, jRule.find("[name=yModulo]"));
+					i.onValueChange = (v)->{
+						if( v>1 )
+							invalidateRuleAndOnesBelow(r);
+						r.tidy();
+					}
+					i.linkEvent( LayerRuleChanged(r) );
+					i.setBounds(1,10);
+					if( r.yModulo==1 )
+						i.jInput.addClass("default");
+
+					// Break on match
+					var jFlag = jRule.find("a.break");
+					jFlag.addClass( r.breakOnMatch ? "on" : "off" );
+					jFlag.click( function(ev:js.jquery.Event) {
+						ev.preventDefault();
+						invalidateRuleAndOnesBelow(r);
+						r.breakOnMatch = !r.breakOnMatch;
+						editor.ge.emit( LayerRuleChanged(r) );
+					});
+
+					// Flip-X
+					var jFlag = jRule.find("a.flipX");
+					jFlag.addClass( r.flipX ? "on" : "off" );
+					jFlag.click( function(ev:js.jquery.Event) {
+						ev.preventDefault();
+						if( r.isSymetricX() )
+							N.error("This option will have no effect on a symetric rule.");
+						else {
+							r.flipX = !r.flipX;
 							editor.ge.emit( LayerRuleChanged(r) );
 						}
-					}
-					else {
-						// Toggle it
-						r.setPerlin( !r.hasPerlin() );
-						if( r.hasPerlin() )
-							invalidateRuleAndOnesBelow(r);
-						editor.ge.emit( LayerRuleChanged(r) );
-					}
-				});
+					});
 
-				// Checker
-				var jFlag = jRule.find("a.checker");
-				jFlag.addClass( r.checker!=None ? "on" : "off" );
-				jFlag.mousedown( function(ev:js.jquery.Event) {
-					if( r.xModulo==1 && r.yModulo==1 ) {
-						N.error("Checker mode needs X or Y modulo greater than 1.");
-						return;
-					}
-					ev.preventDefault();
-					if( ev.button==2 ) {
-						// Pick vertical/horizontal checker
-						var m = new Dialog(jFlag);
-						for(k in [ldtk.Json.AutoLayerRuleCheckerMode.Horizontal, ldtk.Json.AutoLayerRuleCheckerMode.Vertical]) {
-							var name = k.getName();
-							var jRadio = new J('<input name="mode" type="radio" value="$name" id="$name"/>');
-							jRadio.change( function(ev:js.jquery.Event) {
-								r.checker = k;
-								invalidateRuleAndOnesBelow(r);
-								editor.ge.emit( LayerRuleChanged(r) );
-							});
-							m.jContent.append(jRadio);
-							m.jContent.append('<label for="$name">$name</label>');
+					// Flip-Y
+					var jFlag = jRule.find("a.flipY");
+					jFlag.addClass( r.flipY ? "on" : "off" );
+					jFlag.click( function(ev:js.jquery.Event) {
+						ev.preventDefault();
+						if( r.isSymetricY() )
+							N.error("This option will have no effect on a symetric rule.");
+						else {
+							r.flipY = !r.flipY;
+							editor.ge.emit( LayerRuleChanged(r) );
 						}
+					});
 
-						if( r.checker==None )
-							r.checker = r.xModulo==1 ? Vertical : Horizontal;
-						m.jContent.find("[name=mode][value="+r.checker.getName()+"]").click();
-					}
-					else {
-						// Just toggle it
-						r.checker = r.checker==None ? ( r.xModulo==1 ? Vertical : Horizontal ) : None;
+					// Perlin
+					var jFlag = jRule.find("a.perlin");
+					jFlag.addClass( r.hasPerlin() ? "on" : "off" );
+					jFlag.mousedown( function(ev:js.jquery.Event) {
+						ev.preventDefault();
+						if( ev.button==2 ) {
+							// Open perlin settings
+							var w = new ui.modal.dialog.RulePerlinSettings(jFlag, r);
+							w.onSettingsChange = (r)->invalidateRuleAndOnesBelow(r);
+							if( !r.hasPerlin() ) {
+								r.setPerlin(true);
+								editor.ge.emit( LayerRuleChanged(r) );
+							}
+						}
+						else {
+							// Toggle it
+							r.setPerlin( !r.hasPerlin() );
+							if( r.hasPerlin() )
+								invalidateRuleAndOnesBelow(r);
+							editor.ge.emit( LayerRuleChanged(r) );
+						}
+					});
+
+					// Checker
+					var jFlag = jRule.find("a.checker");
+					jFlag.addClass( r.checker!=None ? "on" : "off" );
+					jFlag.mousedown( function(ev:js.jquery.Event) {
+						if( r.xModulo==1 && r.yModulo==1 ) {
+							N.error("Checker mode needs X or Y modulo greater than 1.");
+							return;
+						}
+						ev.preventDefault();
+						if( ev.button==2 ) {
+							// Pick vertical/horizontal checker
+							var m = new Dialog(jFlag);
+							for(k in [ldtk.Json.AutoLayerRuleCheckerMode.Horizontal, ldtk.Json.AutoLayerRuleCheckerMode.Vertical]) {
+								var name = k.getName();
+								var jRadio = new J('<input name="mode" type="radio" value="$name" id="$name"/>');
+								jRadio.change( function(ev:js.jquery.Event) {
+									r.checker = k;
+									invalidateRuleAndOnesBelow(r);
+									editor.ge.emit( LayerRuleChanged(r) );
+								});
+								m.jContent.append(jRadio);
+								m.jContent.append('<label for="$name">$name</label>');
+							}
+
+							if( r.checker==None )
+								r.checker = r.xModulo==1 ? Vertical : Horizontal;
+							m.jContent.find("[name=mode][value="+r.checker.getName()+"]").click();
+						}
+						else {
+							// Just toggle it
+							r.checker = r.checker==None ? ( r.xModulo==1 ? Vertical : Horizontal ) : None;
+							invalidateRuleAndOnesBelow(r);
+							editor.ge.emit( LayerRuleChanged(r) );
+						}
+					});
+
+					// Enable/disable rule
+					var jActive = jRule.find("a.active");
+					jActive.find(".icon").addClass( r.active ? "active" : "inactive" );
+					jActive.click( function(ev:js.jquery.Event) {
+						ev.preventDefault();
 						invalidateRuleAndOnesBelow(r);
+						r.active = !r.active;
 						editor.ge.emit( LayerRuleChanged(r) );
-					}
-				});
-
-				// Enable/disable rule
-				var jActive = jRule.find("a.active");
-				jActive.find(".icon").addClass( r.active ? "active" : "inactive" );
-				jActive.click( function(ev:js.jquery.Event) {
-					ev.preventDefault();
-					invalidateRuleAndOnesBelow(r);
-					r.active = !r.active;
-					editor.ge.emit( LayerRuleChanged(r) );
-				});
+					});
+				}
 
 				// Delete
 				// jRule.find("button.delete").click( function(ev) {

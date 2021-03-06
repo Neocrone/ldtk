@@ -21,6 +21,10 @@ class AutoLayerRuleDef {
 	public var yModulo = 1;
 	public var checker : ldtk.Json.AutoLayerRuleCheckerMode = None;
 
+	public var templateIntGridValue:Int = -1;
+	public var templateUUID:Int = -1;
+	public var templateTileIds:Array<Int> = [];
+
 	var perlinActive = false;
 	public var perlinSeed : Int;
 	public var perlinScale : Float = 0.2;
@@ -122,6 +126,10 @@ class AutoLayerRuleDef {
 			pivotX: JsonTools.writeFloat(pivotX),
 			pivotY: JsonTools.writeFloat(pivotY),
 
+			templateIntGridValue: templateIntGridValue,
+			templateUUID: templateUUID,
+			templateTileIds: templateTileIds.copy(),
+
 			perlinActive: perlinActive,
 			perlinSeed: perlinSeed,
 			perlinScale: JsonTools.writeFloat(perlinScale),
@@ -144,6 +152,10 @@ class AutoLayerRuleDef {
 		r.pivotY = JsonTools.readFloat(json.pivotY, 0);
 		r.xModulo = JsonTools.readInt(json.xModulo, 1);
 		r.yModulo = JsonTools.readInt(json.yModulo, 1);
+
+		r.templateIntGridValue = JsonTools.readInt(json.templateIntGridValue, -1);
+		r.templateUUID = JsonTools.readInt(json.templateUUID, -1);
+		r.templateTileIds = json.templateTileIds;
 
 		r.perlinActive = JsonTools.readBool(json.perlinActive, false);
 		r.perlinScale = JsonTools.readFloat(json.perlinScale, 0.2);
@@ -230,45 +242,93 @@ class AutoLayerRuleDef {
 		return false;
 	}
 
-	public function matches(li:data.inst.LayerInstance, source:data.inst.LayerInstance, cx:Int, cy:Int, dirX=1, dirY=1) {
-		if( tileIds.length==0 )
-			return false;
-
-		if( chance<=0 || chance<1 && dn.M.randSeedCoords(li.seed+uid, cx,cy, 100) >= chance*100 )
-			return false;
-
-		if( hasPerlin() && _perlin.perlin(li.seed+perlinSeed, cx*perlinScale, cy*perlinScale, perlinOctaves) < 0 )
-			return false;
-
+	public function matchesDefault(source:data.inst.LayerInstance, cx:Int, cy:Int, dirX = 1, dirY = 1, overrider = null) {
 		// Rule check
-		var radius = Std.int( size/2 );
-		for(px in 0...size)
-		for(py in 0...size) {
-			var coordId = px + py*size;
-			if( pattern[coordId]==0 )
-				continue;
+		var radius = Std.int(size / 2);
+		for (px in 0...size) {
+			for (py in 0...size) {
+				var coordId = px + py * size;
+				if (pattern[coordId] == 0)
+					continue;
 
-			if( !source.isValid(cx+dirX*(px-radius), cy+dirY*(py-radius)) )
-				return false;
+				var x = cx + dirX * (px - radius);
+				var y = cy + dirY * (py - radius);
 
-			if( dn.M.iabs( pattern[coordId] ) == Const.AUTO_LAYER_ANYTHING+1 ) {
-				// "Anything" checks
-				if( pattern[coordId]>0 && !source.hasIntGrid(cx+dirX*(px-radius), cy+dirY*(py-radius)) )
-					return false;
+				if (!source.isValid(x, y))
+					return [];
 
-				if( pattern[coordId]<0 && source.hasIntGrid(cx+dirX*(px-radius), cy+dirY*(py-radius)) )
-					return false;
-			}
-			else {
-				// Specific value checks
-				if( pattern[coordId]>0 && source.getIntGrid(cx+dirX*(px-radius), cy+dirY*(py-radius)) != pattern[coordId] )
-					return false;
+				if (dn.M.iabs(pattern[coordId]) == Const.AUTO_LAYER_ANYTHING + 1) {
+					// "Anything" checks
+					if (pattern[coordId] > 0 && !source.hasIntGrid(x, y))
+						return [];
 
-				if( pattern[coordId]<0 && source.getIntGrid(cx+dirX*(px-radius), cy+dirY*(py-radius)) == -pattern[coordId] )
-					return false;
+					if (pattern[coordId] < 0 && source.hasIntGrid(x, y))
+						return [];
+				} else {
+					var patternValue = pattern[coordId];
+					if (overrider != null) {
+						patternValue = overrider(patternValue);
+					}
+					// Specific value checks
+					if (patternValue > 0 && source.getIntGrid(x, y) != patternValue)
+						return [];
+
+					if (patternValue < 0 && source.getIntGrid(x, y) == -patternValue)
+						return [];
+				}
 			}
 		}
-		return true;
+		return tileIds;
+	}
+
+	public function matchesTemplate(li:data.inst.LayerInstance, source:data.inst.LayerInstance, cx:Int, cy:Int, dirX = 1, dirY = 1) {
+		var layerDef = source.def;
+		var ruleGroup = layerDef.getRuleGroupByUid(templateUUID);
+		var tileSet = li.getTiledsetDef();
+		var offsetX = tileSet.getTileCx(this.tileIds[0]) - tileSet.getTileCx(this.templateTileIds[0]);
+		var offsetY = tileSet.getTileCy(this.tileIds[0]) - tileSet.getTileCy(this.templateTileIds[0]);
+		if (ruleGroup != null) {
+			for (rule in ruleGroup.rules) {
+				var tileIds:Array<Int>;
+				if ((tileIds = rule.matches(li, source, cx, cy, dirX, dirY, function(v) {
+					switch (v) {
+						case v if (v > 0):
+							return this.templateIntGridValue;
+						case v if (v < 0):
+							return -this.templateIntGridValue;
+						case _:
+							return 0;
+					}
+				})).length > 0) {
+					if (tileSet != null) {
+						tileIds = tileIds.map(tileId -> tileSet.getTileId(tileSet.getTileCx(tileId) + offsetX, tileSet.getTileCy(tileId) + offsetY));
+					}
+					return tileIds;
+				}
+			}
+		}
+		return [];
+	}
+
+	public function matches(li:data.inst.LayerInstance, source:data.inst.LayerInstance, cx:Int, cy:Int, dirX = 1, dirY = 1, overrider:Int->Int = null) {
+		if (tileIds.length == 0)
+			return [];
+
+		if (chance <= 0 || chance < 1 && dn.M.randSeedCoords(li.seed + uid, cx, cy, 100) >= chance * 100)
+			return [];
+
+		if (hasPerlin() && _perlin.perlin(li.seed + perlinSeed, cx * perlinScale, cy * perlinScale, perlinOctaves) < 0)
+			return [];
+
+		switch this.tileMode {
+			case Single:
+				return matchesDefault(source, cx, cy, dirX, dirY, overrider);
+			case Stamp:
+				return matchesDefault(source, cx, cy, dirX, dirY, overrider);
+			case Template:
+				return matchesTemplate(li, source, cx, cy, dirX, dirY);
+		}
+		return [];
 	}
 
 	public function tidy() {

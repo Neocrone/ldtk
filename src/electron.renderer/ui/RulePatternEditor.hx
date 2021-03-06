@@ -84,6 +84,8 @@ class RulePatternEditor {
 			// Center guide
 			if( isCenter ) {
 				switch rule.tileMode {
+					case Template:
+						jCell.addClass("center");
 					case Single:
 						jCell.addClass("center");
 
