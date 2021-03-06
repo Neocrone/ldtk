@@ -265,6 +265,21 @@ class LayerDef {
 		return null;
 	}
 
+	public function getRuleGroupByUid(uid : Int) : Null<AutoLayerRuleGroup> {
+		for (rg in autoRuleGroups)
+			if (rg.uid == uid)
+				return rg;
+		return null;
+	}
+
+	public function getRuleGroupByRuleUid(uid : Int) : Null<AutoLayerRuleGroup> {
+		for (rg in autoRuleGroups)
+			for (r in rg.rules)
+				if (r.uid == uid)
+					return rg;
+		return null;
+	}
+
 	public function getRuleGroup(r:AutoLayerRuleDef) : Null<AutoLayerRuleGroup> {
 		for( rg in autoRuleGroups )
 		for( rr in rg.rules )
