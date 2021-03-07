@@ -12,6 +12,7 @@ class TilesetPicker {
 
 	var tilesetDef : data.def.TilesetDef;
 	var tool : Null<tool.lt.TileTool>;
+	var selectableTileIds : Array<Int>;
 
 	var jPicker : js.jquery.JQuery;
 	var jAtlas : js.jquery.JQuery;
@@ -35,9 +36,10 @@ class TilesetPicker {
 	var gridMode : GridMode = ShowOpaques;
 
 
-	public function new(target:js.jquery.JQuery, td:data.def.TilesetDef, mode:TilePickerMode, ?tool:tool.lt.TileTool) {
+	public function new(target:js.jquery.JQuery, td:data.def.TilesetDef, selectableTileIds:Array<Int> = null, mode:TilePickerMode, ?tool:tool.lt.TileTool) {
 		tilesetDef = td;
 		this.tool = tool;
+		this.selectableTileIds = selectableTileIds;
 
 		this.mode = mode;
 
@@ -90,7 +92,7 @@ class TilesetPicker {
 	}
 
 	function renderAtlas() {
-		tilesetDef.drawAtlasToCanvas(jCanvas);
+		tilesetDef.drawAtlasToCanvas(jCanvas, selectableTileIds);
 	}
 
 	public function renderGrid() {
@@ -328,8 +330,11 @@ class TilesetPicker {
 		var defaultClass = dragStart==null ? "mouseOver" : null;
 
 		if( mode==SingleTile ) {
-			var c = createCursor({ mode:Stamp, ids:[tileId] }, defaultClass, r.wid, r.hei);
-			c.appendTo(jCursor);
+			if( this.selectableTileIds == null ||
+				this.selectableTileIds.contains(tileId)) {
+				var c = createCursor({ mode:Stamp, ids:[tileId] }, defaultClass, r.wid, r.hei);
+				c.appendTo(jCursor);
+			}
 		}
 		else {
 			var saved = mode==ToolPicker ? tilesetDef.getSavedSelectionFor(tileId) : null;
@@ -425,8 +430,11 @@ class TilesetPicker {
 			}
 		}
 
-		if( mode==SingleTile )
-			onSingleTileSelect( selIds[0] );
+		if( mode==SingleTile ) {
+			if( this.selectableTileIds == null || this.selectableTileIds.contains(selIds[0])) {
+				onSingleTileSelect( selIds[0] );
+			}
+		}
 		else if( mode!=ViewOnly ) {
 			if( add ) {
 				if( mode==RectOnly || !App.ME.isShiftDown() && !App.ME.isCtrlDown() ) {

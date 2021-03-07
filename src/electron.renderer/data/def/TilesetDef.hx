@@ -340,14 +340,12 @@ class TilesetDef {
 
 	public function getTileGroupBounds(tileIds:Array<Int>) { // Warning: not good for real-time!
 		if( tileIds==null || tileIds.length==0 )
-			return {
-				top: -1,
-				bottom: -1,
-				left: -1,
-				right: -1,
-				wid: 0,
-				hei: 0,
-			}
+			return new misc.Rect(
+				-1,
+				-1,
+				0,
+				0
+			);
 
 		var top = 99999;
 		var left = 99999;
@@ -359,14 +357,39 @@ class TilesetDef {
 			left = dn.M.imin( left, getTileCx(tid) );
 			right = dn.M.imax( right, getTileCx(tid) );
 		}
-		return {
-			top: top,
-			bottom: bottom,
-			left: left,
-			right: right,
-			wid: right-left+1,
-			hei: bottom-top+1,
+		return new misc.Rect(
+			left,
+			top,
+			right-left + 1,
+			bottom-top + 1
+		);
+	}
+
+	public function getTileGroupBoundsPx(tileIds:Array<Int>) { // Warning: not good for real-time!
+		if( tileIds==null || tileIds.length==0 )
+			return new misc.Rect(
+				-1,
+				-1,
+				0,
+				0
+			);
+
+		var top = 99999;
+		var left = 99999;
+		var right = 0;
+		var bottom = 0;
+		for(tid in tileIds) {
+			top = dn.M.imin( top, getTileSourceY(tid) );
+			bottom = dn.M.imax( bottom, getTileSourceY(tid) );
+			left = dn.M.imin( left, getTileSourceX(tid) );
+			right = dn.M.imax( right, getTileSourceX(tid) );
 		}
+		return new misc.Rect(
+			left,
+			top,
+			(right-left) + ( tileGridSize + spacing ),
+			(bottom-top) + ( tileGridSize + spacing )
+		);
 	}
 
 
@@ -532,12 +555,32 @@ class TilesetDef {
 	}
 
 	#if editor
-	public function drawAtlasToCanvas(jCanvas:js.jquery.JQuery, scale=1.0) {
+	public function drawAtlasToCanvas(jCanvas:js.jquery.JQuery, scale=1.0, highlightedTileIds:Array<Int> ) {
 		if( !jCanvas.is("canvas") )
 			throw "Not a canvas";
 
 		if( !isAtlasLoaded() )
 			return;
+
+		var viewPort = new misc.Rect(0,0,pxWid,pxHei);
+		var tileMask:Array<Array<Bool>>;
+		if( highlightedTileIds != null && highlightedTileIds.length > 0 ) {
+			viewPort = getTileGroupBounds(highlightedTileIds);
+
+			tileMask = [for (x in 0...viewPort.wid) [for (y in 0...viewPort.hei) false ]];
+			for( highlightedTileId in highlightedTileIds ) {
+				var cx = getTileCx(highlightedTileId);
+				var cy = getTileCy(highlightedTileId);
+				tileMask[cx - viewPort.left][cy - viewPort.top] = true;
+			}
+
+			viewPort.cx = padding + viewPort.cx * ( tileGridSize + spacing );
+			viewPort.cy = padding + viewPort.cy * ( tileGridSize + spacing );
+			viewPort.wid = viewPort.wid * ( tileGridSize + spacing );
+			viewPort.hei = viewPort.hei * ( tileGridSize + spacing );
+		} else {
+			tileMask = [for (x in 0...cWid) [for (y in 0...cHei) true ]];
+		}
 
 		var canvas = Std.downcast(jCanvas.get(0), js.html.CanvasElement);
 		var ctx = canvas.getContext2d();
@@ -556,10 +599,18 @@ class TilesetDef {
 			clampedArray[idx] = dn.Color.getRi(c);
 			clampedArray[idx+1] = dn.Color.getGi(c);
 			clampedArray[idx+2] = dn.Color.getBi(c);
-			clampedArray[idx+3] = dn.Color.getAi(c);
+			var tileMaskX = Std.int( (x - padding - viewPort.left) / (tileGridSize + spacing) );
+			var tileMaskY = Std.int( (y - padding - viewPort.top) / (tileGridSize + spacing) );
+			if(tileMask.length > tileMaskX &&
+				tileMask[tileMaskX].length > tileMaskY &&
+				tileMask[tileMaskX][tileMaskY] == false) {
+				clampedArray[idx+3] = 0;
+			} else {
+				clampedArray[idx+3] = dn.Color.getAi(c);
+			}
 		}
 		var imgData = new js.html.ImageData(clampedArray, imgData.pixels.width);
-		ctx.putImageData(imgData,0,0);
+		ctx.putImageData(imgData, 0, 0, viewPort.left, viewPort.top, viewPort.wid, viewPort.hei);
 	}
 
 	public function drawTileToCanvas(jCanvas:js.jquery.JQuery, tileId:Int, toX=0, toY=0, scaleX=1.0, scaleY=1.0) {

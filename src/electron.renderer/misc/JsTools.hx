@@ -745,6 +745,7 @@ class JsTools {
 		tilesetId: Null<Int>,
 		mode: TilePickerMode=MultiTiles,
 		tileIds: Array<Int>,
+		visibleTileIds: Array<Int> = null,
 		onPick: (tileIds:Array<Int>)->Void
 	) {
 		var jTileCanvas = new J('<canvas class="tile"></canvas>');
@@ -808,7 +809,7 @@ class JsTools {
 				var m = new ui.Modal();
 				m.addClass("singleTilePicker");
 
-				var tp = new ui.TilesetPicker(m.jContent, td, mode);
+				var tp = new ui.TilesetPicker(m.jContent, td, visibleTileIds, mode);
 				tp.setSelectedTileIds(tileIds);
 				if( mode==SingleTile )
 					tp.onSingleTileSelect = function(tileId) {
