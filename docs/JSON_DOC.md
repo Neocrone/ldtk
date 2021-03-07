@@ -9,6 +9,7 @@
        - [Field instance](#ldtk-FieldInstanceJson)
    - [Definitions](#ldtk-DefinitionsJson)
      - [Layer definition](#ldtk-LayerDefJson)
+       - [Auto-layer template rule definition](#ldtk-AutoRuleTemplateDef)
        - [Auto-layer rule definition](#ldtk-AutoRuleDef)
      - [Entity definition](#ldtk-EntityDefJson)
        - [Field definition](#ldtk-FieldDefJson)
@@ -178,6 +179,16 @@ Value | Type | Description
 `tilePivotY`<br/><sup class="only">Only *Tile layers*</sup><br/><sup class="internal">*Internal editor data*</sup> | Float | If the tiles are smaller or larger than the layer grid, the pivot value will be used to position the tile relatively its grid cell.
 `type`<br/><sup class="internal">*Internal editor data*</sup> | Enum | Type of the layer as Haxe Enum<br/> Possible values: `IntGrid`, `Entities`, `Tiles`, `AutoLayer`
 
+<a id="ldtk-AutoRuleTemplateDef" name="ldtk-AutoRuleTemplateDef"></a>
+## 3.1.1. Auto-layer template rule definition   
+This complex section isn't meant to be used by game devs at all, as these rules are completely resolved internally by the editor before any saving. You should just ignore this part.
+
+Value | Type | Description
+-- | -- | --
+`replacements`<br/><sup class="internal">*Internal editor data*</sup> | Array&nbsp;of&nbsp;Array&nbsp;of&nbsp;Int | The replacements for the IntGrid values, changing the IntGrid values of the rules contained in the RuleGroup
+`ruleGroupUUID`<br/><sup class="internal">*Internal editor data*</sup> | Int | The RuleGroup the Template is based on
+`tileId`<br/><sup class="internal">*Internal editor data*</sup> | Int | The TileId used as an 'ancho', all rules from the given RuleGroup are offset by the difference between this tile and the tileId of the Template-Rule
+
 <a id="ldtk-AutoRuleDef" name="ldtk-AutoRuleDef"></a>
 ## 3.1.1. Auto-layer rule definition   
 This complex section isn't meant to be used by game devs at all, as these rules are completely resolved internally by the editor before any saving. You should just ignore this part.
@@ -198,9 +209,7 @@ Value | Type | Description
 `pivotX`<br/><sup class="only">Only *'Stamp' tile mode*</sup><br/><sup class="internal">*Internal editor data*</sup> | Float | X pivot of a tile stamp (0-1)
 `pivotY`<br/><sup class="only">Only *'Stamp' tile mode*</sup><br/><sup class="internal">*Internal editor data*</sup> | Float | Y pivot of a tile stamp (0-1)
 `size`<br/><sup class="internal">*Internal editor data*</sup> | Int | Pattern width & height. Should only be 1,3,5 or 7.
-`templateIntGridValue`<br/><sup class="internal">*Internal editor data*</sup> | Int | 
-`templateTileIds`<br/><sup class="internal">*Internal editor data*</sup> | Array&nbsp;of&nbsp;Int | 
-`templateUUID`<br/><sup class="internal">*Internal editor data*</sup> | Int | 
+`template`<br/><sup class="internal">*Internal editor data*</sup> | [Auto-layer&nbsp;template&nbsp;rule&nbsp;definition](#ldtk-AutoRuleTemplateDef)&nbsp;*(can&nbsp;be&nbsp;`null`)* | The data for the 'Template' TileMode
 `tileIds`<br/><sup class="internal">*Internal editor data*</sup> | Array&nbsp;of&nbsp;Int | Array of all the tile IDs. They are used randomly or as stamps, based on `tileMode` value.
 `tileMode`<br/><sup class="internal">*Internal editor data*</sup> | Enum | Defines how tileIds array is used<br/> Possible values: `Single`, `Stamp`, `Template`
 `uid`<br/><sup class="internal">*Internal editor data*</sup> | Int | Unique Int identifier

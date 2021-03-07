@@ -5685,6 +5685,19 @@ $patternSize : 32px;
 			box-sizing: border-box;
 			background-color: $bgDark;
 			border-radius: 3px;
+			.templateSelector {
+				display: grid;
+				grid-template-columns: auto auto;
+				gap: 5px;
+			}
+			.replacementEditor {
+				display: grid;
+				grid-template-columns: auto auto auto;
+				gap: 5px;
+				.shift { 
+					background-image: url("../icons/shift.png");
+				}
+			}
 		}
 
 		.debugInfos {

@@ -21,9 +21,7 @@ class AutoLayerRuleDef {
 	public var yModulo = 1;
 	public var checker : ldtk.Json.AutoLayerRuleCheckerMode = None;
 
-	public var templateIntGridValue:Int = -1;
-	public var templateUUID:Int = -1;
-	public var templateTileIds:Array<Int> = [];
+	public var template : AutoLayerRuleTemplateDef;
 
 	var perlinActive = false;
 	public var perlinSeed : Int;
@@ -96,6 +94,12 @@ class AutoLayerRuleDef {
 		return isValid(cx,cy) ? pattern[ coordId(cx,cy) ] = v : 0;
 	}
 
+	public inline function forEach(callback:Int->Void) {
+		for( p in pattern ) {
+			callback(p);
+		}
+	}
+
 	function initPattern() {
 		pattern = [];
 		for(i in 0...size*size)
@@ -126,9 +130,7 @@ class AutoLayerRuleDef {
 			pivotX: JsonTools.writeFloat(pivotX),
 			pivotY: JsonTools.writeFloat(pivotY),
 
-			templateIntGridValue: templateIntGridValue,
-			templateUUID: templateUUID,
-			templateTileIds: templateTileIds.copy(),
+			template: template != null ? template.toJson() : null,
 
 			perlinActive: perlinActive,
 			perlinSeed: perlinSeed,
@@ -153,9 +155,9 @@ class AutoLayerRuleDef {
 		r.xModulo = JsonTools.readInt(json.xModulo, 1);
 		r.yModulo = JsonTools.readInt(json.yModulo, 1);
 
-		r.templateIntGridValue = JsonTools.readInt(json.templateIntGridValue, -1);
-		r.templateUUID = JsonTools.readInt(json.templateUUID, -1);
-		r.templateTileIds = json.templateTileIds;
+		if( r.tileMode == Template ) {
+			r.template = AutoLayerRuleTemplateDef.fromJson(jsonVersion, json.template);
+		}
 
 		r.perlinActive = JsonTools.readBool(json.perlinActive, false);
 		r.perlinScale = JsonTools.readFloat(json.perlinScale, 0.2);
@@ -283,19 +285,27 @@ class AutoLayerRuleDef {
 
 	public function matchesTemplate(li:data.inst.LayerInstance, source:data.inst.LayerInstance, cx:Int, cy:Int, dirX = 1, dirY = 1) {
 		var layerDef = source.def;
-		var ruleGroup = layerDef.getRuleGroupByUid(templateUUID);
+		var ruleGroup = layerDef.getRuleGroupByUid(template.ruleGroupUUID);
 		var tileSet = li.getTiledsetDef();
-		var offsetX = tileSet.getTileCx(this.tileIds[0]) - tileSet.getTileCx(this.templateTileIds[0]);
-		var offsetY = tileSet.getTileCy(this.tileIds[0]) - tileSet.getTileCy(this.templateTileIds[0]);
+		var offsetX = tileSet.getTileCx(this.tileIds[0]) - tileSet.getTileCx(this.template.tileId);
+		var offsetY = tileSet.getTileCy(this.tileIds[0]) - tileSet.getTileCy(this.template.tileId);
 		if (ruleGroup != null) {
 			for (rule in ruleGroup.rules) {
 				var tileIds:Array<Int>;
 				if ((tileIds = rule.matches(li, source, cx, cy, dirX, dirY, function(v) {
+					if( v == 0 ) return 0;
+					var absV = M.iabs( v );
+					for( replacement in template.replacements) {
+						if( replacement[0] == absV ) {
+							absV = replacement[1];
+							break;
+						}
+					}
 					switch (v) {
 						case v if (v > 0):
-							return this.templateIntGridValue;
+							return absV;
 						case v if (v < 0):
-							return -this.templateIntGridValue;
+							return -absV;
 						case _:
 							return 0;
 					}

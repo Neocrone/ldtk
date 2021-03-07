@@ -456,8 +456,9 @@ class EditAllAutoLayerRules extends ui.modal.Panel {
 
 					var jTemplatePreview = jTemplateOptions.find(".templatePreview");
 					// Template Preview
-					if (r.templateTileIds != null && r.templateTileIds.length > 0 && r.templateTileIds[0] != -1) {
-						var tileId = r.templateTileIds[0];
+					if (r.template != null &&
+						r.template.tileId != -1) {
+						var tileId = r.template.tileId;
 						var td = Editor.ME.project.defs.getTilesetDef(sourceDef.autoTilesetDefUid);
 						var jTile = JsTools.createTile(td, tileId, 32);
 						jTemplatePreview.empty().append(jTile);
@@ -470,7 +471,7 @@ class EditAllAutoLayerRules extends ui.modal.Panel {
 					}
 
 					var groupName = "-- None --";
-					var ruleGroup = sourceDef.getRuleGroupByUid(r.templateUUID);
+					var ruleGroup = sourceDef.getRuleGroupByUid(r.template.ruleGroupUUID);
 					if (ruleGroup != null) {
 						groupName = ruleGroup.name;
 					}

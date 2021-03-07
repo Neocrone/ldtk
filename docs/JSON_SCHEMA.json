@@ -322,6 +322,49 @@
 				"object"
 			]
 		},
+		"AutoRuleTemplateDef": {
+			"description": "This complex section isn't meant to be used by game devs at all, as these rules are completely resolved internally by the editor before any saving. You should just ignore this part.",
+			"title": "Auto-layer template rule definition",
+			"required": [
+				"replacements",
+				"ruleGroupUUID",
+				"tileId"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"tileId": {
+					"description": "The TileId used as an 'ancho', all rules from the given RuleGroup are offset by the difference between this tile and the tileId of the Template-Rule",
+					"type": [
+						"integer"
+					]
+				},
+				"replacements": {
+					"description": "The replacements for the IntGrid values, changing the IntGrid values of the rules contained in the RuleGroup",
+					"items": {
+						"items": {
+							"type": [
+								"integer"
+							]
+						},
+						"type": [
+							"array"
+						]
+					},
+					"type": [
+						"array"
+					]
+				},
+				"ruleGroupUUID": {
+					"description": "The RuleGroup the Template is based on",
+					"type": [
+						"integer"
+					]
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
 		"Definitions": {
 			"description": "If you're writing your own LDtk importer, you should probably just ignore *most* stuff in the `defs` section, as it contains data that are mostly important to the editor. To keep you away from the `defs` section and avoid some unnecessary JSON parsing, important data from definitions is often duplicated in fields prefixed with a double underscore (eg. `__identifier` or `__type`).  The 2 only definition types you might need here are **Tilesets** and **Enums**.",
 			"title": "Definitions",
@@ -412,9 +455,6 @@
 				"pivotX",
 				"pivotY",
 				"size",
-				"templateIntGridValue",
-				"templateTileIds",
-				"templateUUID",
 				"tileIds",
 				"tileMode",
 				"uid",
@@ -445,12 +485,6 @@
 					"description": "",
 					"type": [
 						"number"
-					]
-				},
-				"templateIntGridValue": {
-					"description": "",
-					"type": [
-						"integer"
 					]
 				},
 				"pattern": {
@@ -539,12 +573,6 @@
 						"boolean"
 					]
 				},
-				"templateUUID": {
-					"description": "",
-					"type": [
-						"integer"
-					]
-				},
 				"pivotY": {
 					"description": "Y pivot of a tile stamp (0-1)",
 					"type": [
@@ -557,21 +585,23 @@
 						"integer"
 					]
 				},
-				"templateTileIds": {
-					"description": "",
-					"items": {
-						"type": [
-							"integer"
-						]
-					},
-					"type": [
-						"array"
-					]
-				},
 				"active": {
 					"description": "If FALSE, the rule effect isn't applied, and no tiles are generated.",
 					"type": [
 						"boolean"
+					]
+				},
+				"template": {
+					"description": "The data for the 'Template' TileMode",
+					"oneOf": [
+						{
+							"type": [
+								"null"
+							]
+						},
+						{
+							"$ref": "#/otherTypes/AutoRuleTemplateDef"
+						}
 					]
 				}
 			},

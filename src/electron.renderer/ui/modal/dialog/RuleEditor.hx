@@ -1,5 +1,6 @@
 package ui.modal.dialog;
 
+import data.def.AutoLayerRuleTemplateDef;
 import data.DataTypes;
 
 class RuleEditor extends ui.modal.Dialog {
@@ -70,6 +71,7 @@ class RuleEditor extends ui.modal.Dialog {
 		i.linkEvent( LayerRuleChanged(rule) );
 		i.onChange = function() {
 			rule.tileIds = [];
+			rule.template = rule.tileMode == Template ? new AutoLayerRuleTemplateDef() : null;
 			updateTileSettings();
 		}
 
@@ -111,17 +113,30 @@ class RuleEditor extends ui.modal.Dialog {
 	}
 
 	function updateTemplateTilePicker() {
+		var jExplain = jContent.find(".explain");
+
 		var td = Editor.ME.project.defs.getTilesetDef(sourceDef.autoTilesetDefUid);
 
+		var jTemplateTilePicker = jContent.find(">.pattern .templateEditor .templateTilePicker");
 		var jTemplateEditorGrid = jContent.find(">.pattern .templateEditor .grid");
 		jTemplateEditorGrid.empty();
-		if (this.rule.templateTileIds == null || this.rule.templateTileIds.length == 0) {
-			this.rule.templateTileIds = [-1];
-		}
-		var ruleGroup = layerDef.getRuleGroupByUid(rule.templateUUID);
+		var ruleGroup = layerDef.getRuleGroupByUid(rule.template.ruleGroupUUID);
 		if (ruleGroup != null) {
+			var patternEditor = new RuleReplacementEditor(rule.template, sourceDef, layerDef, (str:String) -> {
+				if (str == null)
+					jExplain.empty();
+				else {
+					if (str.indexOf("\\n") >= 0)
+						str = "<p>" + str.split("\\n").join("</p><p>") + "</p>";
+					jExplain.html(str);
+				}
+			}, () -> curValIdx, () -> editor.ge.emit(LayerRuleChanged(rule)));
+			jTemplateEditorGrid.empty().append(patternEditor.jRoot);
+			var visibleTileIds = [];
 			for (rule in ruleGroup.rules) {
 				for (tileId in rule.tileIds) {
+					visibleTileIds.push( tileId );
+					/*
 					var jDiv = new J('<div/>');
 					jDiv.addClass("gridEntry");
 					var jTile = JsTools.createTile(td, tileId, 32);
@@ -135,8 +150,23 @@ class RuleEditor extends ui.modal.Dialog {
 						this.rule.templateTileIds[0] = tileId;
 						updateTemplateTilePicker();
 					});
+					*/
 				}
 			}
+			// Tile(s)
+			var tids = [];
+			if( this.rule.template.tileId != -1 ) tids.push( this.rule.template.tileId );
+			var jTilePicker = JsTools.createTilePicker(
+				layerDef.autoTilesetDefUid,
+				SingleTile,
+				tids,
+				visibleTileIds,
+				function(tids) {
+					this.rule.template.tileId = tids[0];
+					updateTemplateTilePicker();
+				}
+			);
+			jTemplateTilePicker.empty().append( jTilePicker );
 		}
 	}
 
@@ -158,7 +188,8 @@ class RuleEditor extends ui.modal.Dialog {
 			jOpt.attr("value", -1);
 			jOpt.text("-- Select Template --");
 			for (ruleGroup in layerDef.autoRuleGroups) {
-				if (ruleGroup.rules.contains(rule) == false) {
+				if (ruleGroup.rules.length > 0 &&
+					ruleGroup.rules.contains(rule) == false) {
 					var jOpt = new J('<option/>');
 					jOpt.appendTo(jTemplateEditorSelect);
 					jOpt.attr("value", ruleGroup.uid);
@@ -166,11 +197,11 @@ class RuleEditor extends ui.modal.Dialog {
 				}
 			}
 
-			jTemplateEditorSelect.val(rule.templateUUID);
+			jTemplateEditorSelect.val(rule.template.ruleGroupUUID);
 			updateTemplateTilePicker();
 			jTemplateEditorSelect.change(function(ev) {
-				var templateUUID:Int = jTemplateEditorSelect.val();
-				rule.templateUUID = templateUUID;
+				var templateUUID:Int = Std.parseInt(jTemplateEditorSelect.val());
+				rule.template.ruleGroupUUID = templateUUID;
 				updateTemplateTilePicker();
 			});
 		} else {
@@ -212,9 +243,6 @@ class RuleEditor extends ui.modal.Dialog {
 	function updateValuePicker() {
 		var jValues = jContent.find(">.pattern .values ul").empty();
 
-		if (rule.tileMode == Template) {
-			curValIdx = rule.templateIntGridValue - 1;
-		}
 		// Values picker
 		var idx = 0;
 		for(v in sourceDef.getAllIntGridValues()) {
@@ -230,9 +258,6 @@ class RuleEditor extends ui.modal.Dialog {
 			var i = idx;
 			jVal.click( function(ev) {
 				curValIdx = i;
-				if (rule.tileMode == Template) {
-					rule.templateIntGridValue = curValIdx + 1;
-				}
 				editor.ge.emit( LayerRuleChanged(rule) );
 				updateValuePicker();
 			});
